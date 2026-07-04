@@ -236,20 +236,68 @@ hr { border-top: 1px solid rgba(255, 200, 87, 0.2) !important; }
 """, unsafe_allow_html=True)
 
 # ----------------------------- LOAD ARTIFACTS -----------------------------
-@st.cache_resource
-def load_model():
-    return joblib.load(f"{MODELS_DIR}/best_model.pkl")
+# NOTE: The .pkl files were trained in a specific scikit-learn/numpy
+# environment. Cloud platforms (e.g. Streamlit Community Cloud) may install
+# newer library versions automatically, which can make old pickles fail to
+# load (pickle format changes between major library versions). To make this
+# app work reliably on ANY environment, we fall back to retraining a fresh
+# model directly from the CSV data (which has zero version dependency) if
+# the pickle ever fails to load. Training only takes a few seconds.
 
-@st.cache_resource
-def load_encoders():
-    return joblib.load(f"{MODELS_DIR}/label_encoders.pkl")
+FEATURE_COLS = [
+    "Family_Members", "Number_of_Rooms", "AC_Units", "AC_Usage_Hours",
+    "Fan_Usage_Hours", "Refrigerator_Usage_Hours", "Washing_Machine_Usage_Hours",
+    "Water_Motor_Usage_Hours", "Lighting_Hours", "TV_Usage_Hours",
+    "Iron_Usage_Hours", "Kitchen_Appliance_Hours", "Daily_Appliance_Count",
+    "Outdoor_Temperature_C", "Is_Weekend", "Is_Holiday",
+    "House_Type_enc", "Day_of_Week_enc", "Season_enc"
+]
+RAW_CAT_COLS = ["House_Type", "Day_of_Week", "Season"]
+
+
+@st.cache_resource(show_spinner=False)
+def load_model_and_encoders():
+    """Try loading pre-trained artifacts; if that fails (version mismatch,
+    corrupted file, etc.), retrain fresh from the CSV as a reliable fallback."""
+    try:
+        model_bundle = joblib.load(f"{MODELS_DIR}/best_model.pkl")
+        encoders = joblib.load(f"{MODELS_DIR}/label_encoders.pkl")
+        return model_bundle, encoders, False
+    except Exception:
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.ensemble import GradientBoostingRegressor
+
+        df = pd.read_csv(DATA_PATH)
+
+        encoders = {}
+        for col in RAW_CAT_COLS:
+            le = LabelEncoder()
+            df[col + "_enc"] = le.fit_transform(df[col])
+            encoders[col] = le
+
+        X = df[FEATURE_COLS]
+        y = df["Daily_Electricity_Consumption_kWh"]
+
+        model = GradientBoostingRegressor(
+            n_estimators=250, learning_rate=0.05, max_depth=4, random_state=42
+        )
+        model.fit(X, y)
+
+        model_bundle = {
+            "model": model,
+            "scaler": None,
+            "uses_scaled_input": False,
+            "feature_cols": FEATURE_COLS,
+            "model_name": "Gradient Boosting (retrained for this environment)",
+        }
+        return model_bundle, encoders, True
+
 
 @st.cache_data
 def load_data():
     return pd.read_csv(DATA_PATH)
 
-model_bundle = load_model()
-encoders = load_encoders()
+model_bundle, encoders, was_retrained = load_model_and_encoders()
 df_ref = load_data()
 
 model = model_bundle["model"]
@@ -257,6 +305,9 @@ scaler = model_bundle["scaler"]
 uses_scaled = model_bundle["uses_scaled_input"]
 feature_cols = model_bundle["feature_cols"]
 model_name = model_bundle["model_name"]
+
+if was_retrained:
+    st.toast("⚙️ Model retrained fresh for this environment (pre-trained file was incompatible).", icon="⚙️")
 
 RATE_SLABS = [
     (100, 15), (200, 22), (300, 28), (700, 35), (float("inf"), 45)
