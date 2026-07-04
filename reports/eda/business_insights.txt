@@ -1,0 +1,27 @@
+EXPLORATORY DATA ANALYSIS - BUSINESS INSIGHTS
+=======================================================
+
+Dataset size after cleaning: 1200 records, 23 columns
+
+Average daily consumption: 17.35 kWh
+Median daily consumption: 13.96 kWh
+Std deviation: 9.44 kWh
+
+Top factors INCREASING electricity consumption:
+  - AC_Usage_Hours: correlation = 0.786
+  - AC_Units: correlation = 0.544
+  - Outdoor_Temperature_C: correlation = 0.393
+
+Factors most associated with LOWER consumption:
+  - Season_enc: correlation = -0.096
+  - Lighting_Hours: correlation = -0.143
+  - Refrigerator_Usage_Hours: correlation = nan
+
+Highest consuming season: Summer (avg 23.00 kWh/day)
+Lowest consuming season: Spring (avg 12.41 kWh/day)
+
+Highest consuming house type: Bungalow (avg 24.11 kWh/day)
+
+Business Implication: AC usage and outdoor temperature are the
+dominant drivers of consumption, suggesting energy-saving campaigns
+should focus on cooling appliance efficiency during summer/monsoon months.

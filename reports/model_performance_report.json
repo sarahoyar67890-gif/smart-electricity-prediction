@@ -1,0 +1,29 @@
+{
+  "metrics": {
+    "Linear Regression": {
+      "MAE": 3.916,
+      "MSE": 24.472,
+      "RMSE": 4.947,
+      "R2_Score": 0.7512
+    },
+    "Random Forest": {
+      "MAE": 2.055,
+      "MSE": 9.287,
+      "RMSE": 3.047,
+      "R2_Score": 0.9056
+    },
+    "Gradient Boosting": {
+      "MAE": 1.905,
+      "MSE": 8.295,
+      "RMSE": 2.88,
+      "R2_Score": 0.9157
+    },
+    "XGBoost (tuned)": {
+      "MAE": 1.907,
+      "MSE": 8.315,
+      "RMSE": 2.884,
+      "R2_Score": 0.9154
+    }
+  },
+  "best_model": "Gradient Boosting"
+}
